@@ -36,11 +36,53 @@ export const userApi = {
     return axios.post(`${API_BASE}/api/user/register`, data)
   },
   
-  // 获取当前用户信息
-  getMe: async () => {
+  // 获取当前用户信息 (兼容getMe别名)
+  getCurrentUser: async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
     return axios.get(`${API_BASE}/api/user/me`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
+        Authorization: `Bearer ${token}`
+      }
+    })
+  },
+  
+  getMe: async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.get(`${API_BASE}/api/user/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  },
+
+  // 修改密码
+  changePassword: async (data) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.put(`${API_BASE}/api/user/password`, data, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  },
+
+  // 更新用户信息
+  updateUserInfo: async (data) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.put(`${API_BASE}/api/user/update`, data, {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
     })
   }

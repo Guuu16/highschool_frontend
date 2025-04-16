@@ -2,39 +2,41 @@ import axios from 'axios'
 import { API_BASE } from '@/config/api'
 
 export const adminApi = {
-  // 获取用户列表
-  getUserList: async (params) => {
-    return axios.get(`${API_BASE}/admin/user/list`, {
-      params,
+  // 获取所有项目类别
+  getCategories: async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.get(`${API_BASE}/api/admin/categories`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
+        Authorization: `Bearer ${token}`
       }
     })
   },
 
-  // 修改用户角色
-  updateUserRole: async (id, role) => {
-    return axios.put(`${API_BASE}/admin/user/${id}/role`, { role }, {
+  // 添加新项目类别
+  addCategory: async (data) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.post(`${API_BASE}/api/admin/categories`, data, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
+        Authorization: `Bearer ${token}`
       }
     })
   },
 
-  // 修改用户状态
-  updateUserStatus: async (id, status) => {
-    return axios.put(`${API_BASE}/admin/user/${id}/status`, { status }, {
+  // 删除项目类别
+  deleteCategory: async (id) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.delete(`${API_BASE}/api/admin/categories/${id}`, {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-  },
-
-  // 发布政策公告
-  createPolicy: async (data) => {
-    return axios.post(`${API_BASE}/api/policies`, data, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
+        Authorization: `Bearer ${token}`
       }
     })
   }

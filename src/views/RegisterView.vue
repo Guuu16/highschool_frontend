@@ -23,6 +23,36 @@
         />
       </div>
       <div class="form-group">
+        <label for="realName">真实姓名</label>
+        <input 
+          id="realName" 
+          v-model="form.realName" 
+          type="text" 
+          placeholder="请输入真实姓名"
+          required
+        />
+      </div>
+      <div class="form-group">
+        <label for="email">邮箱</label>
+        <input 
+          id="email" 
+          v-model="form.email" 
+          type="email" 
+          placeholder="请输入邮箱"
+          required
+        />
+      </div>
+      <div class="form-group">
+        <label for="phone">电话</label>
+        <input 
+          id="phone" 
+          v-model="form.phone" 
+          type="tel" 
+          placeholder="请输入电话"
+          required
+        />
+      </div>
+      <div class="form-group">
         <label for="role">角色</label>
         <select 
           id="role" 
@@ -30,8 +60,8 @@
           required
         >
           <option value="">请选择角色</option>
-          <option value="student">学生</option>
-          <option value="teacher">教师</option>
+          <option value="STUDENT">学生</option>
+          <option value="TEACHER">教师</option>
         </select>
       </div>
       <button type="submit" class="register-btn">注册</button>
@@ -45,12 +75,16 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { userApi } from '@/api/user'
 
 const form = ref({
   username: '',
   password: '',
+  realName: '',
+  email: '',
+  phone: '',
   role: ''
 })
 
@@ -60,19 +94,11 @@ const handleRegister = async () => {
   try {
     const userStore = useUserStore()
     await userApi.register(form.value)
-    // 注册成功后自动登录
-    const success = await userStore.login({
-      username: form.value.username,
-      password: form.value.password
-    })
-    if (success) {
-      router.push('/dashboard')
-    } else {
-      router.push('/login')
-    }
+    ElMessage.success('注册成功，请登录')
+    router.push('/login')
   } catch (error) {
     console.error('注册失败:', error)
-    // 这里可以添加错误提示
+    ElMessage.error(error.response?.data?.message || '注册失败')
   }
 }
 </script>

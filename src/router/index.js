@@ -67,6 +67,18 @@ const routes = [
         meta: { role: 'student' }
       },
       {
+        path: 'student/projects/new',
+        name: 'StudentProjectNew',
+        component: () => import('@/views/student/StudentProjectForm.vue'),
+        meta: { role: 'student' }
+      },
+      {
+        path: 'student/projects/edit/:id',
+        name: 'StudentProjectEdit',
+        component: () => import('@/views/student/StudentProjectForm.vue'),
+        meta: { role: 'student' }
+      },
+      {
         path: 'student/mentor-application',
         name: 'StudentMentorApplication',
         component: StudentMentorApplication,

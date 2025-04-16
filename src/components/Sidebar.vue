@@ -92,11 +92,6 @@ const menuItems = computed(() => {
         icon: 'Document'
       },
       {
-        title: '导师申请',
-        path: '/student/mentor-application',
-        icon: 'User'
-      },
-      {
         title: '消息中心',
         path: '/student/messages',
         icon: 'Message'
@@ -121,14 +116,14 @@ const menuItems = computed(() => {
         icon: 'DocumentChecked'
       },
       {
-        title: '导师申请审核',
-        path: '/teacher/mentor-review',
-        icon: 'User'
-      },
-      {
         title: '活动发布',
         path: '/teacher/events',
         icon: 'Calendar'
+      },
+      {
+        title: '个人信息',
+        path: '/teacher/profile',
+        icon: 'User'
       }
     ]
   } else if (normalizedRole === 'admin') {
@@ -143,6 +138,11 @@ const menuItems = computed(() => {
         title: '系统设置',
         path: '/admin/settings',
         icon: 'Setting'
+      },
+      {
+        title: '个人信息',
+        path: '/admin/profile',
+        icon: 'User'
       }
     ]
   }

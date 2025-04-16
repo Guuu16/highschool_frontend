@@ -96,7 +96,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { adminApi } from '@/api/admin'
 
 const activeTab = ref('policy')
 
@@ -129,18 +131,22 @@ const currentPolicy = ref({
 })
 
 // 项目类别相关
-const categories = ref([
-  {
-    id: 1,
-    name: '科技创新',
-    description: '基于技术创新的项目'
-  },
-  {
-    id: 2,
-    name: '社会公益',
-    description: '具有社会价值的公益项目'
+const categories = ref([])
+
+// 加载类别列表
+const loadCategories = async () => {
+  try {
+    const res = await adminApi.getCategories()
+    categories.value = res.data.data
+  } catch (error) {
+    ElMessage.error('获取类别列表失败')
+    console.error(error)
   }
-])
+}
+
+onMounted(() => {
+  loadCategories()
+})
 
 const showCategoryDialog = ref(false)
 const currentCategory = ref({
@@ -198,32 +204,42 @@ const editCategory = (category) => {
   showCategoryDialog.value = true
 }
 
-const deleteCategory = (id) => {
-  // 实际项目中这里调用API删除
-  categories.value = categories.value.filter(c => c.id !== id)
-  ElMessage.success('删除成功')
+const deleteCategory = async (id) => {
+  try {
+    await adminApi.deleteCategory(id)
+    categories.value = categories.value.filter(c => c.id !== id)
+    ElMessage.success('删除成功')
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '删除失败')
+  }
 }
 
-const saveCategory = () => {
-  if (!currentCategory.value.name) {
-    ElMessage.error('请填写类别名称')
-    return
+const saveCategory = async () => {
+  try {
+    if (!currentCategory.value.name) {
+      ElMessage.error('请填写类别名称')
+      return
+    }
+    
+    if (currentCategory.value.id) {
+      // TODO: 需要添加更新类别API
+      const index = categories.value.findIndex(c => c.id === currentCategory.value.id)
+      categories.value[index] = { ...currentCategory.value }
+      ElMessage.success('类别更新成功')
+    } else {
+      const res = await adminApi.addCategory({
+        name: currentCategory.value.name,
+        description: currentCategory.value.description
+      })
+      categories.value.push(res.data.data)
+      ElMessage.success('类别添加成功')
+    }
+    
+    showCategoryDialog.value = false
+    resetCategoryForm()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '操作失败')
   }
-  
-  if (currentCategory.value.id) {
-    // 更新现有类别
-    const index = categories.value.findIndex(c => c.id === currentCategory.value.id)
-    categories.value[index] = { ...currentCategory.value }
-    ElMessage.success('类别更新成功')
-  } else {
-    // 添加新类别
-    currentCategory.value.id = categories.value.length + 1
-    categories.value.push({ ...currentCategory.value })
-    ElMessage.success('类别添加成功')
-  }
-  
-  showCategoryDialog.value = false
-  resetCategoryForm()
 }
 
 const resetCategoryForm = () => {

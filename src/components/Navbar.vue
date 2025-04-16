@@ -1,10 +1,10 @@
 <template>
   <el-header class="navbar">
     <div class="left-menu">
-      <el-icon @click="toggleSidebar">
+      <!-- <el-icon @click="toggleSidebar">
         <Fold v-if="!isCollapse" />
         <Expand v-else />
-      </el-icon>
+      </el-icon> -->
     </div>
     
     <div class="right-menu">
@@ -70,9 +70,42 @@ const handleLogout = () => {
   justify-content: space-between;
   align-items: center;
   padding: 0 20px;
-  background-color: #fff;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  background-color: white;
   height: 60px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 10;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.navbar::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.05), rgba(0,0,0,0));
+}
+
+.navbar .el-dropdown {
+  color: #333;
+}
+
+.navbar .username {
+  color: #333;
+  font-weight: 500;
+}
+
+.user-info {
+  transition: all 0.3s;
+  padding: 5px 10px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.user-info:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .left-menu {

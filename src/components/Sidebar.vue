@@ -1,10 +1,16 @@
 <template>
-  <el-menu
-    :default-active="activeMenu"
-    class="sidebar-menu"
-    :collapse="isCollapse"
-    :router="false"
-  >
+  <div class="sidebar-container">
+    <div class="collapse-btn" @click="toggleCollapse">
+      <el-icon :size="20">
+        <component :is="isCollapse ? 'ArrowRight' : 'ArrowLeft'" />
+      </el-icon>
+    </div>
+    <el-menu
+      :default-active="activeMenu"
+      class="sidebar-menu"
+      :collapse="isCollapse"
+      :router="false"
+    >
     <template v-for="item in menuItems" :key="item.path">
       <el-menu-item 
         v-if="!item.children" 
@@ -29,7 +35,8 @@
         </el-menu-item>
       </el-sub-menu>
     </template>
-  </el-menu>
+    </el-menu>
+  </div>
 </template>
 
 <script setup>
@@ -43,13 +50,20 @@ import {
   Message,
   DocumentChecked,
   Calendar,
-  Setting
+  Setting,
+  ArrowRight,
+  ArrowLeft
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const userStore = useUserStore()
 
 const isCollapse = ref(false)
+
+// 添加折叠按钮控制
+const toggleCollapse = () => {
+  isCollapse.value = !isCollapse.value
+}
 const activeMenu = computed(() => route.path)
 
 const router = useRouter()
@@ -154,9 +168,54 @@ const menuItems = computed(() => {
 .sidebar-menu {
   height: 100%;
   border-right: none;
+  background-color: #1a3a8f;
+}
+
+.sidebar-menu .el-menu-item,
+.sidebar-menu .el-sub-menu__title {
+  color: #ffffff;
+}
+
+.sidebar-menu .el-menu-item:hover,
+.sidebar-menu .el-sub-menu__title:hover {
+  background-color: #2a4a9f;
+}
+
+.sidebar-menu .el-menu-item.is-active {
+  background-color: #2a4a9f;
+  color: #ffffff;
+}
+
+.sidebar-container {
+  position: relative;
+  height: 100%;
+  transition: all 0.3s;
+}
+
+.collapse-btn {
+  position: absolute;
+  right: -20px;
+  top: 20px;
+  width: 20px;
+  height: 40px;
+  background: #1a3a8f;
+  border-radius: 0 4px 4px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1;
+  color: white;
+  transition: all 0.3s;
+  border: 1px solid #0d2a6b;
+}
+
+.collapse-btn:hover {
+  background: #0d2a6b;
 }
 
 .sidebar-menu:not(.el-menu--collapse) {
   width: 220px;
+  transition: width 0.3s;
 }
 </style>

@@ -89,6 +89,8 @@ const handleMenuItemClick = (item) => {
   if (item.path === '/dashboard') {
     const role = userStore.role.toLowerCase()
     router.push(`/${role}/dashboard`)
+  } else if (item.path === '/student/dashboard') {
+    router.push('/student/dashboard')
   } else {
     router.push(item.path)
   }
@@ -110,10 +112,20 @@ const menuItems = computed(() => {
   if (role === 'student') {
     return [
       ...commonMenus,
+      // {
+      //   title: '首页',
+      //   path: '/student/dashboard',
+      //   icon: 'House'
+      // },
       {
         title: '项目管理',
         path: '/student/projects',
-        icon: 'Document'
+        icon: 'DocumentChecked'
+      },
+      {
+        title: '进度管理',
+        path: '/student/progress',
+        icon: 'DocumentChecked'
       },
       {
         title: '公告通知',
@@ -137,6 +149,11 @@ const menuItems = computed(() => {
       {
         title: '项目审核', 
         path: '/teacher/project-review',
+        icon: 'DocumentChecked'
+      },
+      {
+        title: '进度查看',
+        path: '/teacher/progress',
         icon: 'DocumentChecked'
       },
       {

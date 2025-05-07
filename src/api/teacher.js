@@ -101,5 +101,50 @@ export const teacherApi = {
         Authorization: `Bearer ${token}`
       }
     })
+  },
+
+
+  // 获取项目详情
+  getProjectDetail: async (projectId) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.get(`${API_BASE}/api/teacher/projects/${projectId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  },
+
+  // 获取项目进度
+  getProjectProgress: async (projectId) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.get(`${API_BASE}/api/teacher/project/${projectId}/progress`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  },
+
+  // 提交项目反馈
+  submitFeedback: async (progressId, content) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    const formData = new FormData()
+    formData.append('feedback', content)
+    return axios.put(`${API_BASE}/api/teacher/progress/${progressId}/feedback`, 
+      formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
   }
 }

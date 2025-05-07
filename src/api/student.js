@@ -57,6 +57,43 @@ export const studentApi = {
     })
   },
 
+  // 获取项目进度
+  getProjectProgress: async (id) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.get(`${API_BASE}/api/projects/${id}/progress`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+  },
+
+  // 提交项目进度(带文件上传)
+  submitProgress: async (projectId, formData) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    
+    // 确保headers包含token
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    }
+    
+    console.log('提交进度请求headers:', config.headers) // 调试日志
+    
+    return axios.post(
+      `${API_BASE}/api/student/project/${projectId}/progress`, 
+      formData,
+      config
+    )
+  },
+
   // 更新项目
   updateProject: async (id, data) => {
     const token = localStorage.getItem('token')
@@ -92,6 +129,34 @@ export const studentApi = {
       throw new Error('未找到认证token')
     }
     return axios.get(`${API_BASE}/api/projects/student`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+  },
+
+  // 获取项目类别
+  getCategories: async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.get(`${API_BASE}/api/student/categories`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+  },
+
+  // 获取导师列表
+  getTeachers: async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.get(`${API_BASE}/api/student/teachers`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'

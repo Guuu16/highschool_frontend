@@ -28,6 +28,11 @@ const routes = [
     component: () => import('@/views/LoginView.vue')
   },
   {
+    path: '/project-review',
+    name: 'TeacherProjectReview',
+    component: () => import('@/views/teacher/TeacherProjectReview.vue')
+  },
+  {
     path: '/register',
     name: 'Register',
     component: () => import('@/views/RegisterView.vue')
@@ -42,7 +47,7 @@ const routes = [
         name: 'Dashboard',
         redirect: (to) => {
           const role = localStorage.getItem('role')
-          switch(role) {
+          switch (role) {
             case 'admin':
               return { path: '/admin/dashboard' }
             case 'teacher':
@@ -55,12 +60,18 @@ const routes = [
         }
       },
       // 学生路由
-      {
-        path: '/student/dashboard',
-        name: 'StudentDashboard',
-        component: () => import('@/views/student/StudentDashboard.vue'),
-        meta: { role: 'student' }
-      },
+      // {
+      //   path: '/teacher/project-review',
+      //   name: 'TeacherProjectReview',
+      //   component: () => import('@/views/teacher/TeacherProjectReview.vue'),
+      //   meta: { role: 'teacher' }
+      // },
+      // {
+      //   path: '/teacher/project-review/:id',
+      //   name: 'TeacherProjectReviewDetail',
+      //   component: () => import('@/views/teacher/TeacherProjectReview.vue'),
+      //   meta: { role: 'teacher' }
+      // },
       {
         path: '/admin/policies',
         name: 'AdminPolicyList',
@@ -74,16 +85,22 @@ const routes = [
         meta: { requiresAuth: true, role: 'ADMIN' }
       },
       {
-          path: '/admin/policies/:id',
-          name: 'AdminPolicyDetail',
-          component: () => import('@/views/admin/AdminPolicyDetail.vue'),
-          meta: { requiresAuth: true, role: 'ADMIN' }
-        },
-        {
-          path: '/admin/policies/edit/:id',
-          name: 'AdminPolicyEdit',
-          component: () => import('@/views/admin/AdminPolicyEdit.vue'),
-          meta: { requiresAuth: true, role: 'ADMIN' }
+        path: '/admin/policies/:id',
+        name: 'AdminPolicyDetail',
+        component: () => import('@/views/admin/AdminPolicyDetail.vue'),
+        meta: { requiresAuth: true, role: 'ADMIN' }
+      },
+      {
+        path: '/admin/policies/edit/:id',
+        name: 'AdminPolicyEdit',
+        component: () => import('@/views/admin/AdminPolicyEdit.vue'),
+        meta: { requiresAuth: true, role: 'ADMIN' }
+      },
+      {
+        path: 'student/dashboard',
+        name: 'StudentDashboard',
+        component: () => import('@/views/student/StudentDashboard.vue'),
+        meta: { role: 'student' }
       },
       {
         path: 'student/projects',
@@ -112,14 +129,26 @@ const routes = [
       {
         path: 'student/progress',
         name: 'StudentProgress',
+        component: () => import('@/views/student/StudentProgressList.vue'),
+        meta: { role: 'student' }
+      },
+      {
+        path: 'student/progress-submit',
+        name: 'StudentProgressSubmit',
         component: StudentProgressSubmit,
+        meta: { role: 'student' }
+      },
+      {
+        path: 'student/progress/:id',
+        name: 'StudentProgressDetail',
+        component: () => import('@/views/student/StudentProgressDetail.vue'),
         meta: { role: 'student' }
       },
       {
         path: 'student/messages/policies',
         name: 'StudentPolicies',
         component: () => import('@/views/student/StudentPolicies.vue'),
-        meta: { 
+        meta: {
           role: 'student',
           title: '公告通知'
         }
@@ -128,7 +157,7 @@ const routes = [
         path: 'student/events',
         name: 'StudentEvents',
         component: () => import('@/views/student/StudentEvents.vue'),
-        meta: { 
+        meta: {
           role: 'student',
           title: '活动通知'
         }
@@ -157,6 +186,18 @@ const routes = [
         name: 'TeacherProjectReview',
         component: TeacherProjectReview,
         meta: { role: 'teacher' }
+      },
+      {
+        path: '/teacher/progress',
+        name: 'TeacherProgress',
+        component: () => import('@/views/teacher/TeacherProjectProgress.vue'),
+        meta: { title: '进度管理' }
+      },
+      {
+        path: '/teacher/progress/detail',
+        name: 'TeacherProgressDetail',
+        component: () => import('@/views/teacher/TeacherProjectProgressDetail.vue'),
+        meta: { title: '进度详情' }
       },
       {
         path: 'teacher/mentor-review',
@@ -200,7 +241,7 @@ const routes = [
         path: '/student/profile',
         name: 'StudentProfile',
         component: () => import('@/views/student/StudentProfile.vue'),
-        meta: { 
+        meta: {
           role: 'student',
           title: '学生个人信息'
         }
@@ -209,7 +250,7 @@ const routes = [
         path: '/admin/settings',
         name: 'AdminSettings',
         component: () => import('@/views/admin/AdminSettings.vue'),
-        meta: { 
+        meta: {
           role: 'admin',
           title: '系统设置'
         }
@@ -259,27 +300,27 @@ router.beforeEach((to, from, next) => {
     return next('/login')
   }
 
-    // 检查角色权限
-    if (to.meta.role) {
-      console.log('路由要求的角色:', to.meta.role, '当前用户角色:', userRole)
-      const currentRole = userRole?.toLowerCase()
-      
-      // 管理员可以访问所有页面
-      if (currentRole === 'admin') {
-        console.log('管理员权限，允许访问')
-        return next()
-      }
-      
-      // 处理角色权限检查
-      const requiredRoles = Array.isArray(to.meta.role) 
-        ? to.meta.role.map(r => r.toLowerCase())
-        : [to.meta.role.toLowerCase()]
-      
-      if (!requiredRoles.includes(currentRole)) {
-        console.log('角色权限不符，跳转到首页')
-        return next('/dashboard') // 无权限则跳转到首页
-      }
+  // 检查角色权限
+  if (to.meta.role) {
+    console.log('路由要求的角色:', to.meta.role, '当前用户角色:', userRole)
+    const currentRole = userRole?.toLowerCase()
+
+    // 管理员可以访问所有页面
+    if (currentRole === 'admin') {
+      console.log('管理员权限，允许访问')
+      return next()
     }
+
+    // 处理角色权限检查
+    const requiredRoles = Array.isArray(to.meta.role)
+      ? to.meta.role.map(r => r.toLowerCase())
+      : [to.meta.role.toLowerCase()]
+
+    if (!requiredRoles.includes(currentRole)) {
+      console.log('角色权限不符，跳转到首页')
+      return next('/dashboard') // 无权限则跳转到首页
+    }
+  }
 
   console.log('允许访问:', to.path)
   next()

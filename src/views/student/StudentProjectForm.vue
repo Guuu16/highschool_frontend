@@ -49,13 +49,17 @@
         />
       </el-form-item>
       
-      <el-form-item label="计划文件" prop="planFileUrl">
+      <el-form-item label="计划文件" prop="planFile">
         <el-upload
-          action="/api/upload"
-          :on-success="handleUploadSuccess"
-          :before-upload="beforeUpload"
+          v-model:file-list="fileList"
+          :auto-upload="false"
+          :limit="1"
+          :on-change="handleFileChange"
         >
-          <el-button type="primary">点击上传</el-button>
+          <el-button type="primary">选择文件</el-button>
+          <template #tip>
+            <div class="el-upload__tip">只能上传PDF文件，且不超过10MB</div>
+          </template>
         </el-upload>
       </el-form-item>
       
@@ -86,6 +90,8 @@
 
 <script>
 import { defineComponent, ref, computed } from 'vue'
+import axios from 'axios'
+import { API_BASE } from '@/config/api'
 import { useRoute, useRouter } from 'vue-router'
 import { studentApi } from '@/api/student'
 import { useUserStore } from '@/stores/user'
@@ -122,23 +128,23 @@ export default defineComponent({
     const loading = ref(true)
 
     // 文件上传成功处理
-    const handleUploadSuccess = (response) => {
-      form.value.planFileUrl = response.data.url
-    }
-
-    // 上传前验证
-    const beforeUpload = (file) => {
-      const isPDF = file.type === 'application/pdf'
-      const isLt10M = file.size / 1024 / 1024 < 10
+    const fileList = ref([])
+    
+    const handleFileChange = (file) => {
+      const isPDF = file.raw.type === 'application/pdf'
+      const isLt10M = file.raw.size / 1024 / 1024 < 20
 
       if (!isPDF) {
         ElMessage.error('只能上传PDF文件')
+        fileList.value = []
+        return false
       }
       if (!isLt10M) {
-        ElMessage.error('文件大小不能超过10MB')
+        ElMessage.error('文件大小不能超过20MB')
+        fileList.value = []
+        return false
       }
-
-      return isPDF && isLt10M
+      return true
     }
 
     const submitForm = async () => {
@@ -149,18 +155,55 @@ export default defineComponent({
         
         if (isEdit.value) {
           console.log('进入编辑模式，准备更新项目')
-          const res = await studentApi.updateProject(route.params.id, form.value)
+          const formData = new FormData()
+          formData.append('title', form.value.title)
+          formData.append('description', form.value.description)
+          formData.append('categoryId', Number(form.value.categoryId))
+          formData.append('credit', Number(form.value.credit))
+          formData.append('teacherId', Number(form.value.teacherId))
+          // 已拒绝项目编辑后自动变为待审核，其他情况保持原状态
+          formData.append('status', originalStatus.value === 'rejected' ? 0 : (form.value.status || 0))
+          
+          // 确保总是传递planFile字段，即使没有新文件
+          if (fileList.value.length > 0 && fileList.value[0].raw) {
+            formData.append('planFile', fileList.value[0].raw)
+          } else {
+            formData.append('planFile', new Blob(), 'empty.pdf')
+          }
+          
+          const token = localStorage.getItem('token')
+          // 调试日志 - 打印FormData内容
+          for (let [key, value] of formData.entries()) {
+            console.log('FormData:', key, value)
+          }
+          const res = await axios.put(`${API_BASE}/api/projects/${route.params.id}`, formData, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data'
+            }
+          })
           console.log('更新项目API响应:', res)
+          console.log('响应数据:', res.data)
           ElMessage.success('项目更新成功')
         } else {
           console.log('进入新建模式，准备创建项目')
-          const res = await studentApi.createProject({
-            title: form.value.title,
-            description: form.value.description,
-            categoryId: Number(form.value.categoryId),
-            credit: Number(form.value.credit),
-            planFileUrl: form.value.planFileUrl,
-            teacherId: Number(form.value.teacherId)
+          const formData = new FormData()
+          formData.append('title', form.value.title)
+          formData.append('description', form.value.description)
+          formData.append('categoryId', Number(form.value.categoryId))
+          formData.append('credit', Number(form.value.credit))
+          formData.append('teacherId', Number(form.value.teacherId))
+          
+          if (fileList.value.length > 0) {
+            formData.append('planFile', fileList.value[0].raw)
+          }
+          
+          const token = localStorage.getItem('token')
+          const res = await axios.post(`${import.meta.env.VITE_API_BASE || ''}/api/api/projects`, formData, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data'
+            }
           })
           console.log('创建项目API响应:', res)
           ElMessage.success('项目创建成功')
@@ -216,10 +259,13 @@ export default defineComponent({
     }
 
     // 编辑模式加载项目数据
+    const originalStatus = ref('')
     const loadProjectData = async () => {
       if (isEdit.value) {
         try {
-          const { data } = await studentApi.getProject(route.params.id)
+          const { data } = await studentApi.getProjectDetail(route.params.id)
+          originalStatus.value = data.data.status === 2 ? 'rejected' : 
+                               data.data.status === 1 ? 'approved' : 'pending'
           if (!data.success || !data.data) {
             throw new Error(data.message || '获取项目数据失败')
           }
@@ -230,7 +276,17 @@ export default defineComponent({
             description: data.data.description || '',
             credit: data.data.credit || 1,
             planFileUrl: data.data.planFileUrl || '',
-            teacherId: data.data.teacherId?.toString() || ''
+            teacherId: data.data.teacherId?.toString() || '',
+            status: data.data.status || 0
+          }
+          
+          // 初始化文件列表
+          if (data.data.planFileUrl) {
+            const fileName = data.data.planFileUrl.split('/').pop()
+            fileList.value = [{
+              name: fileName,
+              url: `${import.meta.env.VITE_API_BASE || 'http://localhost:5173'}/api${data.data.planFileUrl}`
+            }]
           }
         } catch (error) {
           console.error('加载项目数据失败:', error)
@@ -251,8 +307,8 @@ export default defineComponent({
       teachers,
       loading,
       projectForm,
-      handleUploadSuccess,
-      beforeUpload,
+      fileList,
+      handleFileChange,
       submitForm,
       resetForm
     }

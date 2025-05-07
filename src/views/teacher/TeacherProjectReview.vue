@@ -73,6 +73,15 @@
           <p><strong>申请人：</strong>{{ currentProject.student }}</p>
           <p><strong>项目类别：</strong>{{ currentProject.category }}</p>
           <p><strong>申请时间：</strong>{{ currentProject.createdAt }}</p>
+          <p><strong>学分：</strong>
+            <el-input-number 
+              v-model="currentProject.credit" 
+              :min="0" 
+              :max="10"
+              size="small"
+              style="margin-left: 10px;"
+            />
+          </p>
           <p><strong>项目描述：</strong></p>
           <div class="project-description">
             {{ currentProject.description }}
@@ -81,20 +90,15 @@
         
         <template v-if="activeTab === 'pending'">
           <el-divider />
-          <el-form 
-            ref="reviewForm" 
-            :model="reviewForm" 
-            label-width="80px"
-          >
-            <el-form-item label="审核意见" prop="comment">
-              <el-input 
-                v-model="reviewForm.comment" 
-                type="textarea" 
-                :rows="3"
-                placeholder="请输入审核意见"
-              />
-            </el-form-item>
-          </el-form>
+          <div class="review-comment">
+            <label>审核意见：</label>
+            <textarea
+              v-model="reviewForm.comment"
+              rows="3"
+              placeholder="请输入审核意见"
+              style="width: 100%; margin-top: 10px; padding: 8px; border: 1px solid #dcdfe6; border-radius: 4px;"
+            ></textarea>
+          </div>
         </template>
       </div>
       
@@ -122,79 +126,82 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
+import axios from 'axios'
 import { teacherApi } from '@/api/teacher'
+import { ElMessage } from 'element-plus'
 
 const activeTab = ref('pending')
 const dialogVisible = ref(false)
 const currentProject = ref(null)
+const loading = ref(false)
 const reviewForm = ref({
   comment: ''
 })
 
-// 模拟待审核项目数据
-const pendingProjects = ref([
-  {
-    id: 1,
-    name: '智能校园管理系统',
-    student: '张三',
-    category: '软件开发',
-    description: '开发一个智能化的校园管理系统，包括学生管理、课程管理等功能模块。',
-    createdAt: '2025-03-25'
-  },
-  {
-    id: 2,
-    name: '大学生创业平台',
-    student: '李四',
-    category: '商业计划',
-    description: '构建一个帮助大学生创业的在线平台，提供项目展示、资源对接等服务。',
-    createdAt: '2025-03-28'
-  },
-  {
-    id: 5,
-    name: 'AI学习助手',
-    student: '钱七',
-    category: '人工智能',
-    description: '开发基于大语言模型的学习助手，帮助学生解答问题。',
-    createdAt: '2025-03-30'
-  }
-])
+const pendingProjects = ref([])
+const reviewedProjects = ref([])
 
-// 模拟已审核项目数据
-const reviewedProjects = ref([
-  {
-    id: 3,
-    name: '环保材料研究',
-    student: '王五',
-    category: '科学研究',
-    status: 'approved',
-    reviewTime: '2025-03-20',
-    createdAt: '2025-03-15'
-  },
-  {
-    id: 4,
-    name: '校园垃圾分类',
-    student: '赵六',
-    category: '社会实践',
-    status: 'rejected',
-    reviewTime: '2025-03-18',
-    createdAt: '2025-03-10'
-  },
-  {
-    id: 6,
-    name: '校园二手交易平台',
-    student: '孙八',
-    category: '软件开发',
-    status: 'approved',
-    reviewTime: '2025-03-22',
-    createdAt: '2025-03-12'
-  }
-])
+const fetchProjects = async () => {
+  try {
+    loading.value = true
+    
+    // 获取学生列表建立映射
+    const studentsRes = await teacherApi.getStudents()
+    const studentMap = new Map(studentsRes.data?.data?.map(s => [s.id, s.realName || s.username]))
+    
+    // 获取分类列表建立映射
+    const categoriesRes = await teacherApi.getCategories()
+    const categoryMap = new Map(categoriesRes.data?.data?.map(c => [c.id, c.name]))
+    
+    // 获取所有项目
+    const res = await teacherApi.getProjects()
+    const allProjects = res.data?.data || []
+    
+    // 筛选待审核项目(status=0)
+    pendingProjects.value = allProjects
+      .filter(project => project.status === 0)
+      .map(project => ({
+        id: project.id,
+        name: project.title,
+        student: studentMap.get(project.studentId) || '未知学生',
+        category: categoryMap.get(project.categoryId) || '未分类',
+        description: project.description || '无描述',
+        credit: project.credit || 0,
+        createdAt: project.createTime ? new Date(project.createTime).toLocaleString() : '未知时间'
+      }))
 
-const handleView = (id) => {
+    // 筛选已审核项目(status=1或2)
+    reviewedProjects.value = allProjects
+      .filter(project => project.status === 1 || project.status === 2)
+      .map(project => ({
+      id: project.id,
+      name: project.title,
+      student: project.studentName || '未知学生',
+      category: project.categoryName || '未分类',
+      status: project.status === 1 ? 'approved' : project.status === 2 ? 'rejected' : 'pending',
+      reviewTime: project.updateTime ? new Date(project.updateTime).toLocaleString() : '未知时间',
+      createdAt: project.createTime ? new Date(project.createTime).toLocaleString() : '未知时间',
+      feedback: project.feedback || ''
+    }))
+  } catch (error) {
+    console.error('获取项目列表失败:', error)
+    ElMessage.error('获取项目列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchProjects()
+})
+
+const handleView = async (id) => {
   const projects = activeTab.value === 'pending' ? pendingProjects.value : reviewedProjects.value
   currentProject.value = projects.find(p => p.id === id)
   dialogVisible.value = true
+  await nextTick()
+  document.querySelector('textarea')?.focus()
 }
 
 const handleApprove = (id) => {
@@ -207,26 +214,42 @@ const handleReject = (id) => {
 
 const submitReview = async (status) => {
   try {
-    await teacherApi.reviewProject({
-      projectId: currentProject.value.id,
-      status,
-      comment: reviewForm.value.comment
-    })
-    
-    // 更新项目状态
-    const index = pendingProjects.value.findIndex(p => p.id === currentProject.value.id)
-    if (index !== -1) {
-      const project = pendingProjects.value.splice(index, 1)[0]
-      project.status = status
-      project.reviewTime = new Date().toLocaleDateString()
-      reviewedProjects.value.unshift(project)
+    const token = localStorage.getItem('token')
+    const res = await axios.put(
+      `${import.meta.env.VITE_API_BASE || ''}/api/api/teacher/projects/${currentProject.value.id}/review`,
+      {
+        status: status === 'approved' ? 1 : 2,  // 1=通过, 2=拒绝
+        feedback: reviewForm.value.comment,
+        credit: currentProject.value.credit
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+
+    if (res.data && res.data.success) {
+      // 更新项目状态
+      const index = pendingProjects.value.findIndex(p => p.id === currentProject.value.id)
+      if (index !== -1) {
+        const project = pendingProjects.value.splice(index, 1)[0]
+        project.status = status
+        project.reviewTime = new Date().toLocaleString()
+        project.feedback = reviewForm.value.comment
+        reviewedProjects.value.unshift(project)
+      }
+      
+      ElMessage.success('审核提交成功')
+      dialogVisible.value = false
+      reviewForm.value.comment = ''
+    } else {
+      ElMessage.error(res.data.message || '审核提交失败')
     }
-    
-    ElMessage.success('审核提交成功')
-    dialogVisible.value = false
-    reviewForm.value.comment = ''
   } catch (error) {
     console.error('审核提交失败:', error)
+    ElMessage.error(error.response?.data?.message || '审核提交失败')
   }
 }
 </script>
@@ -247,5 +270,15 @@ const submitReview = async (status) => {
   background-color: #f5f7fa;
   border-radius: 4px;
   margin-top: 10px;
+}
+
+.review-comment {
+  margin-top: 20px;
+}
+
+.review-comment label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 8px;
 }
 </style>

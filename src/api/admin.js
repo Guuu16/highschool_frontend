@@ -1,43 +1,79 @@
 import axios from 'axios'
 import { API_BASE } from '@/config/api'
 
+const request = (options) => {
+  return axios({
+    baseURL: API_BASE,
+    ...options,
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      ...options.headers
+    }
+  })
+}
+
 export const adminApi = {
-  // 获取所有项目类别
-  getCategories: async () => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      throw new Error('未找到认证token')
+  // 公告管理
+  getPolicyList: ({ pageNum = 1, pageSize = 10, ...params }) => request({
+    url: '/api/policies',
+    method: 'get',
+    params: {
+      pageNum,
+      pageSize,
+      ...params
     }
-    return axios.get(`${API_BASE}/api/admin/categories`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-  },
+  }),
+  getPolicyDetail: (id) => request({
+    url: `/api/policies/${id}`,
+    method: 'get'
+  }),
+  updatePolicy: (id, data) => request({
+    url: `/api/policies/${id}`,
+    method: 'put',
+    data
+  }),
+  createPolicy: (data) => request({
+    url: '/api/policies',
+    method: 'post',
+    data
+  }),
+  updatePolicy: (id, data) => request({
+    url: `/api/policies/${id}`,
+    method: 'put',
+    data
+  }),
+  deletePolicy: (id) => request({
+    url: `/api/policies/${id}`,
+    method: 'delete'
+  }),
 
-  // 添加新项目类别
-  addCategory: async (data) => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      throw new Error('未找到认证token')
-    }
-    return axios.post(`${API_BASE}/api/admin/categories`, data, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-  },
+  // 项目类别管理
+  getCategories: () => request({
+    url: '/api/admin/categories',
+    method: 'get'
+  }),
+  addCategory: (data) => request({
+    url: '/api/admin/categories',
+    method: 'post',
+    data
+  }),
+  deleteCategory: (id) => request({
+    url: `/api/admin/categories/${id}`,
+    method: 'delete'
+  }),
 
-  // 删除项目类别
-  deleteCategory: async (id) => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      throw new Error('未找到认证token')
+  // 用户管理
+  getUserList: (params) => request({
+    url: '/api/admin/user/list',
+    method: 'get',
+    params
+  }),
+  updateUserStatus: (id, status) => request({
+    url: '/api/admin/user/status',
+    method: 'put',
+    data: {
+      id,
+      status: status === 'active' ? 1 : 0
     }
-    return axios.delete(`${API_BASE}/api/admin/categories/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-  }
+  })
 }

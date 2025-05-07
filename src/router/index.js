@@ -19,17 +19,18 @@ import TeacherEvents from '@/views/teacher/TeacherEvents.vue'
 // 管理员模块
 import AdminUserList from '@/views/admin/AdminUserList.vue'
 import AdminPolicyCreate from '@/views/admin/AdminPolicyCreate.vue'
+import AdminPolicyList from '@/views/admin/AdminPolicyList.vue'
 
 const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: LoginView
+    component: () => import('@/views/LoginView.vue')
   },
   {
     path: '/register',
     name: 'Register',
-    component: RegisterView
+    component: () => import('@/views/RegisterView.vue')
   },
   {
     path: '/',
@@ -55,10 +56,34 @@ const routes = [
       },
       // 学生路由
       {
-        path: 'student/dashboard',
+        path: '/student/dashboard',
         name: 'StudentDashboard',
-        component: StudentDashboard,
+        component: () => import('@/views/student/StudentDashboard.vue'),
         meta: { role: 'student' }
+      },
+      {
+        path: '/admin/policies',
+        name: 'AdminPolicyList',
+        component: () => import('@/views/admin/AdminPolicyList.vue'),
+        meta: { requiresAuth: true, role: 'ADMIN' }
+      },
+      {
+        path: '/admin/policies/create',
+        name: 'AdminPolicyCreate',
+        component: () => import('@/views/admin/AdminPolicyCreate.vue'),
+        meta: { requiresAuth: true, role: 'ADMIN' }
+      },
+      {
+          path: '/admin/policies/:id',
+          name: 'AdminPolicyDetail',
+          component: () => import('@/views/admin/AdminPolicyDetail.vue'),
+          meta: { requiresAuth: true, role: 'ADMIN' }
+        },
+        {
+          path: '/admin/policies/edit/:id',
+          name: 'AdminPolicyEdit',
+          component: () => import('@/views/admin/AdminPolicyEdit.vue'),
+          meta: { requiresAuth: true, role: 'ADMIN' }
       },
       {
         path: 'student/projects',
@@ -91,6 +116,29 @@ const routes = [
         meta: { role: 'student' }
       },
       {
+        path: 'student/messages/policies',
+        name: 'StudentPolicies',
+        component: () => import('@/views/student/StudentPolicies.vue'),
+        meta: { 
+          role: 'student',
+          title: '公告通知'
+        }
+      },
+      {
+        path: 'student/events',
+        name: 'StudentEvents',
+        component: () => import('@/views/student/StudentEvents.vue'),
+        meta: { 
+          role: 'student',
+          title: '活动通知'
+        }
+      },
+      // 保留旧路由路径兼容性
+      {
+        path: 'student/policies',
+        redirect: '/student/messages/policies'
+      },
+      {
         path: 'student/messages',
         name: 'StudentMessages',
         component: StudentMessages,
@@ -114,6 +162,12 @@ const routes = [
         path: 'teacher/mentor-review',
         name: 'TeacherMentorReview',
         component: TeacherMentorReview,
+        meta: { role: 'teacher' }
+      },
+      {
+        path: 'teacher/policies',
+        name: 'TeacherPolicies',
+        component: () => import('@/views/teacher/TeacherPolicies.vue'),
         meta: { role: 'teacher' }
       },
       {
@@ -171,6 +225,12 @@ const routes = [
         name: 'AdminProfile',
         component: () => import('@/views/admin/AdminProfile.vue'),
         meta: { role: 'admin' }
+      },
+      {
+        path: '/projects/:id',
+        name: 'ProjectDetail',
+        component: () => import('@/views/student/StudentProjectDetail.vue'),
+        meta: { role: ['student', 'teacher', 'admin'] }
       }
     ]
   }
@@ -199,24 +259,27 @@ router.beforeEach((to, from, next) => {
     return next('/login')
   }
 
-  // 检查角色权限
-  if (to.meta.role) {
-    console.log('路由要求的角色:', to.meta.role, '当前用户角色:', userRole)
-    const requiredRole = to.meta.role?.toLowerCase()
-    const currentRole = userRole?.toLowerCase()
-    
-    // 管理员可以访问所有页面
-    if (currentRole === 'admin') {
-      console.log('管理员权限，允许访问')
-      return next()
+    // 检查角色权限
+    if (to.meta.role) {
+      console.log('路由要求的角色:', to.meta.role, '当前用户角色:', userRole)
+      const currentRole = userRole?.toLowerCase()
+      
+      // 管理员可以访问所有页面
+      if (currentRole === 'admin') {
+        console.log('管理员权限，允许访问')
+        return next()
+      }
+      
+      // 处理角色权限检查
+      const requiredRoles = Array.isArray(to.meta.role) 
+        ? to.meta.role.map(r => r.toLowerCase())
+        : [to.meta.role.toLowerCase()]
+      
+      if (!requiredRoles.includes(currentRole)) {
+        console.log('角色权限不符，跳转到首页')
+        return next('/dashboard') // 无权限则跳转到首页
+      }
     }
-    
-    // 其他角色只能访问自己权限的页面
-    if (!requiredRole || !currentRole || requiredRole !== currentRole) {
-      console.log('角色权限不符，跳转到首页')
-      return next('/dashboard') // 无权限则跳转到首页
-    }
-  }
 
   console.log('允许访问:', to.path)
   next()

@@ -35,7 +35,7 @@
       <h2>快捷操作</h2>
       <el-row :gutter="20">
         <el-col :span="6">
-          <el-card shadow="hover" @click="$router.push('/teacher/projects')">
+          <el-card shadow="hover" @click="$router.push('/teacher/project-review')">
             <div class="action-item">
               <el-icon :size="30"><Document /></el-icon>
               <div>项目审核</div>

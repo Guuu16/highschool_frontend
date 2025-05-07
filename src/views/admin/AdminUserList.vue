@@ -39,7 +39,13 @@
       :data="users" 
       style="width: 100%"
       v-loading="loading"
+      empty-text="暂无数据"
     >
+      <template #empty>
+        <div class="empty-container">
+          <el-empty description="暂无用户数据" />
+        </div>
+      </template>
       <el-table-column prop="username" label="用户名" width="120" />
       <el-table-column prop="name" label="姓名" width="100" />
       <el-table-column prop="email" label="邮箱" width="180" />
@@ -52,7 +58,7 @@
       </el-table-column>
       <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
-          <el-switch
+            <el-switch
             v-model="row.status"
             active-value="active"
             inactive-value="inactive"
@@ -60,7 +66,11 @@
           />
         </template>
       </el-table-column>
-      <el-table-column prop="createdAt" label="注册时间" width="180" />
+      <el-table-column prop="createdAt" label="注册时间" width="180">
+        <template #default="{row}">
+          {{ formatDate(row.createdAt) }}
+        </template>
+      </el-table-column>
       <el-table-column label="操作" width="180">
         <template #default="{ row }">
           <el-button 
@@ -151,6 +161,7 @@
 import { ref, onMounted } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { adminApi } from '@/api/admin'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const loading = ref(false)
 const showEditDialog = ref(false)
@@ -187,36 +198,7 @@ const rules = {
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 }
 
-// 模拟用户数据
-const users = ref([
-  {
-    id: 1,
-    username: 'admin',
-    name: '系统管理员',
-    email: 'admin@school.edu',
-    role: 'admin',
-    status: 'active',
-    createdAt: '2025-01-01'
-  },
-  {
-    id: 2,
-    username: 'teacher1',
-    name: '张教授',
-    email: 'teacher1@school.edu',
-    role: 'teacher',
-    status: 'active',
-    createdAt: '2025-02-15'
-  },
-  {
-    id: 3,
-    username: 'student1',
-    name: '张三',
-    email: 'student1@school.edu',
-    role: 'student',
-    status: 'active',
-    createdAt: '2025-03-10'
-  }
-])
+const users = ref([])
 
 onMounted(() => {
   fetchUsers()
@@ -225,14 +207,38 @@ onMounted(() => {
 const fetchUsers = async () => {
   try {
     loading.value = true
+    console.log('发送请求参数:', {
+      page: currentPage.value,
+      size: pageSize.value
+    })
     const res = await adminApi.getUserList({
       page: currentPage.value,
-      size: pageSize.value,
-      search: searchQuery.value,
-      role: roleFilter.value
+      size: pageSize.value
     })
-    users.value = res.data
-    total.value = res.total
+    console.log('API原始响应:', JSON.stringify(res, null, 2))
+    // 强制刷新数据绑定
+    // 根据实际API响应结构调整
+    const responseData = res.data?.data || {}
+    const rawData = responseData.records || []
+    console.log('原始数据:', JSON.stringify(rawData, null, 2))
+    
+    // 格式化用户数据
+    const formattedData = rawData.map(user => ({
+      id: user.id,
+      username: user.username,
+      name: user.realName || user.name || '未知',
+      email: user.email || '未设置',
+      role: user.role?.toLowerCase() || 'unknown',
+      status: user.status === 1 ? 'active' : 'inactive',
+      createdAt: user.createTime || '未知时间'
+    }))
+    
+    console.log('格式化后数据:', JSON.stringify(formattedData, null, 2))
+    users.value = formattedData
+    total.value = responseData.total || 0
+    
+    // 强制刷新组件
+    users.value = [...users.value]
   } catch (error) {
     console.error('获取用户列表失败:', error)
   } finally {
@@ -247,6 +253,20 @@ const getRoleType = (role) => {
     student: 'success'
   }
   return map[role] || ''
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).replace(/\//g, '-')
 }
 
 const getRoleText = (role) => {
@@ -274,11 +294,59 @@ const handleCurrentChange = (val) => {
 }
 
 const handleStatusChange = async (user) => {
+  // 打印完整用户对象和列表状态
+  console.log('当前用户列表状态:', JSON.stringify(user.status, null, 2))
+  // console.log('当前用户:', JSON.stringify(user, null, 2))
+  
+  
+  const originalStatus = user.status === 'active' ? 'inactive' : 'active' //解释一下。
+
+  console.log('原始状态:', originalStatus, 
+    '类型:', typeof originalStatus, 
+    '值:', originalStatus)
+  const newStatus = originalStatus === 'active' ? 'inactive' : 'active'
+  const newBackendStatus = newStatus === 'active' ? 1 : 0
+  
+
+  
+  // 立即更新UI状态
+  user.status = newStatus
+  users.value = [...users.value]
+  
   try {
-    await adminApi.updateUserStatus(user.id, user.status)
-    ElMessage.success('状态更新成功')
+    
+    console.log(`切换状态：前端${originalStatus}->${user.status}, 后端传值:${newBackendStatus}`)
+    const res = await adminApi.updateUserStatus(user.id, newBackendStatus)
+    console.log('状态更新响应:', res)
+    
+    if (!res.data?.success) {
+      throw new Error(res.data?.message || '状态更新失败')
+    }
+    
+    ElMessage({
+      message: '状态更新成功',
+      type: 'success',
+      duration: 2000,
+      showClose: true
+    })
+    
+    // 更新本地数据状态
+    const index = users.value.findIndex(u => u.id === user.id)
+    if (index !== -1) {
+      users.value[index].status = originalStatus === 'active' ? 'inactive' : 'active'
+      users.value = [...users.value]
+    }
   } catch (error) {
     console.error('状态更新失败:', error)
+    // 恢复原状态
+    user.status = originalStatus
+    users.value = [...users.value]
+    ElMessage({
+      message: error.message || '状态更新失败',
+      type: 'error',
+      duration: 2000,
+      showClose: true
+    })
   }
 }
 

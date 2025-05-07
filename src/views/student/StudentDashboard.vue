@@ -7,7 +7,7 @@
         <el-col :span="8">
           <el-card shadow="hover">
             <div class="stat-item">
-              <div class="stat-value">3</div>
+              <div class="stat-value">{{ stats.inProgress }}</div>
               <div class="stat-label">进行中的项目</div>
             </div>
           </el-card>
@@ -15,7 +15,7 @@
         <el-col :span="8">
           <el-card shadow="hover">
             <div class="stat-item">
-              <div class="stat-value">1</div>
+              <div class="stat-value">{{ stats.pending }}</div>
               <div class="stat-label">待审核的项目</div>
             </div>
           </el-card>
@@ -23,7 +23,7 @@
         <el-col :span="8">
           <el-card shadow="hover">
             <div class="stat-item">
-              <div class="stat-value">2</div>
+              <div class="stat-value">{{ stats.unreadMessages }}</div>
               <div class="stat-label">未读消息</div>
             </div>
           </el-card>
@@ -34,15 +34,15 @@
     <div class="quick-actions">
       <h2>快捷操作</h2>
       <el-row :gutter="20">
-        <el-col :span="6">
-          <el-card shadow="hover" @click="$router.push('/student/projects/create')">
+        <el-col :span="8">
+          <el-card shadow="hover" @click="$router.push('/student/projects/new')">
             <div class="action-item">
               <el-icon :size="30"><DocumentAdd /></el-icon>
               <div>新建项目</div>
             </div>
           </el-card>
         </el-col>
-        <el-col :span="6">
+        <el-col :span="8">
           <el-card shadow="hover" @click="$router.push('/student/projects')">
             <div class="action-item">
               <el-icon :size="30"><List /></el-icon>
@@ -50,15 +50,7 @@
             </div>
           </el-card>
         </el-col>
-        <el-col :span="6">
-          <el-card shadow="hover" @click="$router.push('/student/mentor-application')">
-            <div class="action-item">
-              <el-icon :size="30"><User /></el-icon>
-              <div>导师申请</div>
-            </div>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
+        <el-col :span="8">
           <el-card shadow="hover" @click="$router.push('/student/messages')">
             <div class="action-item">
               <el-icon :size="30"><Message /></el-icon>
@@ -72,7 +64,46 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import { DocumentAdd, List, User, Message } from '@element-plus/icons-vue'
+import { studentApi } from '@/api/student'
+import { ElMessage } from 'element-plus'
+
+const stats = ref({
+  inProgress: 0,
+  pending: 0,
+  unreadMessages: 0
+})
+
+const fetchStats = async () => {
+  try {
+    // 获取项目统计
+    const projectsRes = await studentApi.getMyProjects()
+    if (projectsRes.data?.success) {
+      const projects = projectsRes.data.data || []
+      stats.value.inProgress = projects.filter(p => p.status === 1).length
+      stats.value.pending = projects.filter(p => p.status === 0).length
+    }
+
+    try {
+      // 获取未读消息数
+      const messagesRes = await studentApi.getUnreadMessageCount()
+      if (messagesRes.data?.success) {
+        stats.value.unreadMessages = messagesRes.data.data || 0
+      }
+    } catch (error) {
+      console.error('获取未读消息数失败:', error)
+      stats.value.unreadMessages = 0
+    }
+  } catch (error) {
+    console.error('获取统计数据失败:', error)
+    ElMessage.error('获取统计数据失败')
+  }
+}
+
+onMounted(() => {
+  fetchStats()
+})
 </script>
 
 <style scoped>

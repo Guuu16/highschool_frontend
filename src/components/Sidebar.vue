@@ -40,9 +40,11 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { commonApi } from '@/api/common'
+import { ElMessage } from 'element-plus'
 import {
   House,
   Document,
@@ -57,25 +59,36 @@ import {
 
 const route = useRoute()
 const userStore = useUserStore()
-
+const router = useRouter()
 const isCollapse = ref(false)
 
-// 添加折叠按钮控制
+// 获取最新公告
+const fetchLatestPolicies = async () => {
+  try {
+    const res = await commonApi.getLatestPolicies()
+    if (res.data?.success && res.data.data?.length > 0) {
+      // 这里可以添加弹窗显示最新公告的逻辑
+      console.log('最新公告:', res.data.data)
+    }
+  } catch (error) {
+    ElMessage.error('获取最新公告失败: ' + (error.response?.data?.message || error.message))
+  }
+}
+
+onMounted(() => {
+  fetchLatestPolicies()
+})
+
 const toggleCollapse = () => {
   isCollapse.value = !isCollapse.value
 }
+
 const activeMenu = computed(() => route.path)
 
-const router = useRouter()
-
 const handleMenuItemClick = (item) => {
-  console.log('菜单项点击:', item.title, '路径:', item.path)
   if (item.path === '/dashboard') {
     const role = userStore.role.toLowerCase()
-    console.log('首页点击 - 当前角色:', role)
-    const targetPath = `/${role}/dashboard`
-    console.log('路由跳转目标:', targetPath)
-    router.push(targetPath)
+    router.push(`/${role}/dashboard`)
   } else {
     router.push(item.path)
   }
@@ -83,21 +96,18 @@ const handleMenuItemClick = (item) => {
 
 // 根据用户角色返回不同的菜单项
 const menuItems = computed(() => {
-  const role = userStore.role
-  console.log('当前用户角色:', role)
+  const role = userStore.role?.toLowerCase()
   const commonMenus = [
-      {
-        title: '首页',
-        path: '/dashboard',
-        icon: 'House',
-        exact: true,
-        index: '/dashboard'
-      }
+    {
+      title: '首页',
+      path: '/dashboard',
+      icon: 'House',
+      exact: true,
+      index: '/dashboard'
+    }
   ]
   
-  const normalizedRole = role?.toLowerCase()
-  
-  if (normalizedRole === 'student') {
+  if (role === 'student') {
     return [
       ...commonMenus,
       {
@@ -106,28 +116,33 @@ const menuItems = computed(() => {
         icon: 'Document'
       },
       {
-        title: '消息中心',
-        path: '/student/messages',
-        icon: 'Message'
+        title: '公告通知',
+        path: '/student/policies',
+        icon: 'Document'
+      },
+      {
+        title: '活动通知', 
+        path: '/student/events',
+        icon: 'Calendar'
       },
       {
         title: '个人信息',
         path: '/student/profile',
         icon: 'User'
-      },
-      {
-        title: '项目进度',
-        path: '/student/progress',
-        icon: 'Document'
       }
     ]
-  } else if (normalizedRole === 'teacher') {
+  } else if (role === 'teacher') {
     return [
       ...commonMenus,
       {
         title: '项目审核', 
         path: '/teacher/project-review',
         icon: 'DocumentChecked'
+      },
+      {
+        title: '公告通知',
+        path: '/teacher/policies',
+        icon: 'Document'
       },
       {
         title: '活动发布',
@@ -140,7 +155,7 @@ const menuItems = computed(() => {
         icon: 'User'
       }
     ]
-  } else if (normalizedRole === 'admin') {
+  } else if (role === 'admin') {
     return [
       ...commonMenus,
       {
@@ -149,14 +164,15 @@ const menuItems = computed(() => {
         icon: 'User'
       },
       {
+        title: '公告管理',
+        path: '/admin/policies',
+        icon: 'Document',
+        meta: { role: 'admin' }
+      },
+      {
         title: '系统设置',
         path: '/admin/settings',
         icon: 'Setting'
-      },
-      {
-        title: '个人信息',
-        path: '/admin/profile',
-        icon: 'User'
       }
     ]
   }

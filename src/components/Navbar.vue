@@ -10,7 +10,7 @@
     <div class="right-menu">
       <el-dropdown>
         <div class="user-info">
-          <el-avatar :size="30" :src="userStore.avatar" />
+          <el-avatar :size="30">{{ userStore.role === 'student' ? '👩🎓' : userStore.role === 'teacher' ? '👨🏫' : '👨💼' }}</el-avatar>
           <span class="username">{{ userStore.name }}</span>
         </div>
         <template #dropdown>

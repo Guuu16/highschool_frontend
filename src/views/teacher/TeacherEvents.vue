@@ -23,6 +23,14 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <el-pagination
+        v-model:current-page="pagination.pageNum"
+        :page-size="pagination.pageSize"
+        layout="total, prev, pager, next"
+        :total="pagination.total"
+        @current-change="handlePageChange"
+      />
     </el-card>
 
     <!-- 创建/编辑活动对话框 -->
@@ -78,16 +86,35 @@ const formatTime = (timeStr) => {
   return new Date(timeStr).toLocaleString('zh-CN')
 }
 
+const pagination = ref({
+  pageSize: 10,
+  pageNum: 1,
+  total: 0,
+  pages: 0
+})
+
 const fetchEvents = async () => {
   try {
-    const res = await teacherApi.getEvents()
+    const res = await teacherApi.getEvents({
+      pageSize: pagination.value.pageSize,
+      pageNum: pagination.value.pageNum
+    })
     if (res.data?.success) {
-      // 确保返回的数据是数组格式
-      eventList.value = Array.isArray(res.data.data) ? res.data.data : []
+      eventList.value = res.data.data.records || []
+      pagination.value = {
+        pageNum: res.data.data.current || 1,
+        pageSize: res.data.data.size || 10,
+        total: res.data.data.total || 0
+      }
     }
   } catch (error) {
     ElMessage.error('获取活动列表失败: ' + (error.response?.data?.message || error.message))
   }
+}
+
+const handlePageChange = (page) => {
+  pagination.value.pageNum = page
+  fetchEvents()
 }
 
 const showCreateDialog = () => {

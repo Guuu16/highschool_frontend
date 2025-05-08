@@ -31,7 +31,7 @@
               size="small"
               @click="openResource(row.resourceUrl)"
             >
-              查看附件
+              活动链接
             </el-button>
           </template>
         </el-table-column>

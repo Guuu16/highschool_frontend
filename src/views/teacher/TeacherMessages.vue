@@ -14,12 +14,9 @@
           :key="contact.id"
           class="contact-item"
           :class="{active: activeContact?.id === contact.id}"
-          @click="() => {
-            selectContact(contact)
-            markAsRead(contact.id)
-          }"
+          @click="selectContact(contact); markAsRead(contact.id)"
         >
-          <el-avatar :size="40">👨🏫</el-avatar>
+          <el-avatar :size="40">👩🎓</el-avatar>
           <div class="contact-info">
             <div class="name">{{ contact.name }}</div>
             <div class="last-msg">{{ contact.lastMsg }}</div>
@@ -30,7 +27,7 @@
     
     <div class="right-panel">
       <div class="chat-header">
-        <el-avatar :size="40">👨🏫</el-avatar>
+        <el-avatar :size="40">👩🎓</el-avatar>
         <div class="contact-name">{{ activeContact?.name }}</div>
       </div>
       
@@ -61,8 +58,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { studentApi } from '@/api/student'
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { teacherApi } from '@/api/teacher'
 import { Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
@@ -72,32 +69,32 @@ const newMessage = ref('')
 const activeContact = ref(null)
 const messagesRef = ref(null)
 
-// 获取联系人数据
+// 获取学生联系人数据
 const contacts = ref([])
 
-const fetchTeachers = async () => {
+const fetchStudents = async () => {
   try {
-    const res = await studentApi.getTeachers()
+    const res = await teacherApi.getStudents()
     if (res.data?.success) {
-      contacts.value = res.data.data.map(teacher => ({
-        id: teacher.id,
-        name: teacher.realName || teacher.username,
+      contacts.value = res.data.data.map(student => ({
+        id: student.id,
+        name: student.realName || student.username,
         avatar: '',
         lastMsg: '',
         unread: 0
       }))
       
-      // 自动选中第一个老师
+      // 自动选中第一个学生
       if (contacts.value.length > 0) {
         selectContact(contacts.value[0])
       }
     }
   } catch (error) {
-    ElMessage.error('获取老师列表失败: ' + (error.response?.data?.message || error.message))
+    ElMessage.error('获取学生列表失败: ' + (error.response?.data?.message || error.message))
   }
 }
 
-onMounted(fetchTeachers)
+onMounted(fetchStudents)
 
 // 消息列表
 const messages = ref([])
@@ -113,31 +110,26 @@ const formatTime = (timeStr) => {
 }
 
 const selectContact = (contact) => {
-  console.log('1. 开始selectContact，联系人ID:', contact.id)
   activeContact.value = contact
-  console.log('2. 准备调用fetchMessages')
   fetchMessages(contact.id)
-  console.log('3. fetchMessages调用完成')
 }
 
 const markAsRead = async (contactId) => {
   try {
     console.log('开始标记联系人ID的消息为已读:', contactId)
     
-    // 获取当前联系人的所有未读消息ID
-    const unreadMessageIds = messages.value
-      .filter(msg => msg.senderId === contactId && !msg.isRead)
-      .map(msg => msg.id)
+    // 获取该联系人的所有未读消息
+    const unreadMessages = messages.value.filter(
+      msg => msg.senderId === contactId && !msg.isRead
+    )
+    console.log('找到未读消息数量:', unreadMessages.length)
     
-    console.log('未读消息IDs:', unreadMessageIds)
-    console.log('所有消息:', JSON.stringify(messages.value, null, 2))
-    
-    if (unreadMessageIds.length > 0) {
+    if (unreadMessages.length > 0) {
       // 批量标记为已读
       const results = await Promise.all(
-        unreadMessageIds.map(id => {
-          console.log('正在标记消息ID为已读:', id)
-          return studentApi.markMessageAsRead(id)
+        unreadMessages.map(msg => {
+          console.log('正在标记消息ID为已读:', msg.id)
+          return teacherApi.markMessageAsRead(msg.id)
         })
       )
       console.log('标记已读API调用结果:', results)
@@ -164,34 +156,32 @@ const markAsRead = async (contactId) => {
   }
 }
 
+
 const fetchMessages = async (contactId) => {
   try {
-    console.log('1. 开始fetchMessages，联系人ID:', contactId)
-    const messagesRes = await studentApi.getMessages(contactId)
-    console.log('2. API响应:', messagesRes)
-    messages.value = messagesRes.data?.data || []
-    console.log('3. 设置messages:', messages.value)
-
-
+    const [receivedRes, sentRes] = await Promise.all([
+      teacherApi.getReceivedMessages(),
+      teacherApi.getSentMessages()
+    ])
     
-    // 获取未读消息数并标记为已读
-    const unreadCountRes = await studentApi.getUnreadMessageCount()
-    console.log('4. 未读消息数响应:', unreadCountRes)
-    if (unreadCountRes.data?.success) {
-      const unreadCount = unreadCountRes.data.data?.count || 0
-      console.log('5. 未读消息数:', unreadCount)
-      if (unreadCount > 0) {
-        for (const msg of messages.value) {
-          await studentApi.markMessageAsRead(msg.id)
-          console.log('6. 开始标记未读消息为已读')
-    }
-       
-       
+    if (receivedRes.data?.success && sentRes.data?.success) {
+      messages.value = [
+        ...receivedRes.data.data.filter(msg => msg.senderId === contactId),
+        ...sentRes.data.data.filter(msg => msg.receiverId === contactId)
+      ].sort((a, b) => new Date(a.sentAt) - new Date(b.sentAt))
+      
+      // 获取未读消息数并标记为已读
+      const unreadCountRes = await teacherApi.getUnreadMessageCount()
+      if (unreadCountRes.data?.success) {
+        const unreadCount = unreadCountRes.data.data.count[contactId] || 0
+        if (unreadCount > 0) {
+          // 标记所有未读消息为已读
+          await teacherApi.markMessageAsRead(contactId)
+        }
       }
     }
     scrollToBottom()
   } catch (error) {
-    console.error('获取消息失败:', error)
     ElMessage.error('获取消息失败: ' + (error.response?.data?.message || error.message))
   }
 }
@@ -200,7 +190,7 @@ const sendMessage = async () => {
   if (!newMessage.value.trim()) return
   
   try {
-    const res = await studentApi.sendMessage({
+    const res = await teacherApi.sendMessage({
       receiverId: activeContact.value.id,
       content: newMessage.value
     })
@@ -232,40 +222,14 @@ const scrollToBottom = () => {
 }
 
 // 初始化选中第一个联系人
-const timer = ref(null)
 onMounted(() => {
   if (contacts.value.length > 0) {
     selectContact(contacts.value[0])
   }
-  
-  // 定时获取未读消息数
-  timer.value = setInterval(fetchUnreadCount, 30000)
 })
-
-onUnmounted(() => {
-  if (timer.value) {
-    clearInterval(timer.value)
-  }
-})
-
-// 获取未读消息数
-const fetchUnreadCount = async () => {
-  try {
-    const res = await studentApi.getUnreadMessageCount()
-    if (res.data?.success) {
-      // 更新联系人未读消息数
-      contacts.value.forEach(contact => {
-        contact.unread = res.data.data.count[contact.id] || 0
-      })
-    }
-  } catch (error) {
-    console.error('获取未读消息数失败', error)
-  }
-}
 </script>
 
 <style scoped>
-/* 复用教师端相同的样式 */
 .wechat-container {
   display: flex;
   height: calc(100vh - 60px);

@@ -5,36 +5,40 @@
         <component :is="isCollapse ? 'ArrowRight' : 'ArrowLeft'" />
       </el-icon>
     </div>
+    <div class="user-avatar">
+      <!-- <div class="avatar-emoji">{{ userStore.role === 'student' ? '👩🎓' : userStore.role === 'teacher' ? '👨🏫' : '👨💼' }}</div> -->
+      <div class="user-name">{{ userStore.name }}</div>
+    </div>
     <el-menu
       :default-active="activeMenu"
       class="sidebar-menu"
       :collapse="isCollapse"
       :router="false"
     >
-    <template v-for="item in menuItems" :key="item.path">
-      <el-menu-item 
-        v-if="!item.children" 
-        :index="item.index || item.path"
-        @click="handleMenuItemClick(item)"
-      >
-        <el-icon><component :is="item.icon" /></el-icon>
-        <span>{{ item.title }}</span>
-      </el-menu-item>
-      
-      <el-sub-menu v-else :index="item.path">
-        <template #title>
+      <template v-for="item in menuItems" :key="item.path">
+        <el-menu-item 
+          v-if="!item.children" 
+          :index="item.index || item.path"
+          @click="handleMenuItemClick(item)"
+        >
           <el-icon><component :is="item.icon" /></el-icon>
           <span>{{ item.title }}</span>
-        </template>
-        <el-menu-item 
-          v-for="child in item.children" 
-          :key="child.path" 
-          :index="child.path"
-        >
-          {{ child.title }}
         </el-menu-item>
-      </el-sub-menu>
-    </template>
+        
+        <el-sub-menu v-else :index="item.path">
+          <template #title>
+            <el-icon><component :is="item.icon" /></el-icon>
+            <span>{{ item.title }}</span>
+          </template>
+          <el-menu-item 
+            v-for="child in item.children" 
+            :key="child.path" 
+            :index="child.path"
+          >
+            {{ child.title }}
+          </el-menu-item>
+        </el-sub-menu>
+      </template>
     </el-menu>
   </div>
 </template>
@@ -67,7 +71,6 @@ const fetchLatestPolicies = async () => {
   try {
     const res = await commonApi.getLatestPolicies()
     if (res.data?.success && res.data.data?.length > 0) {
-      // 这里可以添加弹窗显示最新公告的逻辑
       console.log('最新公告:', res.data.data)
     }
   } catch (error) {
@@ -112,11 +115,6 @@ const menuItems = computed(() => {
   if (role === 'student') {
     return [
       ...commonMenus,
-      // {
-      //   title: '首页',
-      //   path: '/student/dashboard',
-      //   icon: 'House'
-      // },
       {
         title: '项目管理',
         path: '/student/projects',
@@ -129,7 +127,7 @@ const menuItems = computed(() => {
       },
       {
         title: '公告通知',
-        path: '/student/policies',
+        path: '/student/messages/policies',
         icon: 'Document'
       },
       {
@@ -141,6 +139,11 @@ const menuItems = computed(() => {
         title: '个人信息',
         path: '/student/profile',
         icon: 'User'
+      },
+      {
+        title: '消息中心',
+        path: '/student/messages',
+        icon: 'Message'
       }
     ]
   } else if (role === 'teacher') {
@@ -165,6 +168,11 @@ const menuItems = computed(() => {
         title: '活动发布',
         path: '/teacher/events',
         icon: 'Calendar'
+      },
+      {
+        title: '消息中心',
+        path: '/teacher/messages',
+        icon: 'Message'
       },
       {
         title: '个人信息',
@@ -198,6 +206,25 @@ const menuItems = computed(() => {
 </script>
 
 <style scoped>
+.user-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  border-bottom: 1px solid #2a4a9f;
+}
+
+.avatar-emoji {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.user-name {
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+}
+
 .sidebar-menu {
   height: 100%;
   border-right: none;

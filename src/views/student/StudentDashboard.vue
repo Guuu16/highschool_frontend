@@ -1,5 +1,6 @@
 <template>
   <div class="dashboard-container">
+    <PolicyNotice />
     <h1>学生工作台</h1>
     
     <div class="stats-container">
@@ -21,7 +22,7 @@
           </el-card>
         </el-col>
         <el-col :span="8">
-          <el-card shadow="hover">
+          <el-card shadow="hover" @click="$router.push('/student/messages')">
             <div class="stat-item">
               <div class="stat-value">{{ stats.unreadMessages }}</div>
               <div class="stat-label">未读消息</div>
@@ -66,6 +67,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { DocumentAdd, List, User, Message } from '@element-plus/icons-vue'
+import PolicyNotice from '@/components/PolicyNotice.vue'
 import { studentApi } from '@/api/student'
 import { ElMessage } from 'element-plus'
 
@@ -85,15 +87,10 @@ const fetchStats = async () => {
       stats.value.pending = projects.filter(p => p.status === 0).length
     }
 
-    try {
-      // 获取未读消息数
-      const messagesRes = await studentApi.getUnreadMessageCount()
-      if (messagesRes.data?.success) {
-        stats.value.unreadMessages = messagesRes.data.data || 0
-      }
-    } catch (error) {
-      console.error('获取未读消息数失败:', error)
-      stats.value.unreadMessages = 0
+    // 获取未读消息数
+    const messagesRes = await studentApi.getUnreadMessageCount()
+    if (messagesRes.data?.success) {
+      stats.value.unreadMessages = messagesRes.data.data?.count || 0
     }
   } catch (error) {
     console.error('获取统计数据失败:', error)

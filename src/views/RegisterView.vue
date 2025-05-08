@@ -62,6 +62,7 @@
           <option value="">请选择角色</option>
           <option value="STUDENT">学生</option>
           <option value="TEACHER">教师</option>
+          <option value="ADMIN">管理员</option>
         </select>
       </div>
       <button type="submit" class="register-btn">注册</button>

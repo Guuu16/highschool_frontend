@@ -55,7 +55,7 @@ export const teacherApi = {
   },
 
   // 活动管理接口
-  getEvents: async () => {
+  getEvents: async (params) => {
     const token = localStorage.getItem('token')
     if (!token) {
       throw new Error('未找到认证token')
@@ -63,7 +63,8 @@ export const teacherApi = {
     return axios.get(`${API_BASE}/api/events`, {
       headers: {
         Authorization: `Bearer ${token}`
-      }
+      },
+      params
     })
   },
 
@@ -103,7 +104,6 @@ export const teacherApi = {
     })
   },
 
-
   // 获取项目详情
   getProjectDetail: async (projectId) => {
     const token = localStorage.getItem('token')
@@ -138,13 +138,73 @@ export const teacherApi = {
     }
     const formData = new FormData()
     formData.append('feedback', content)
-    return axios.put(`${API_BASE}/api/teacher/progress/${progressId}/feedback`, 
+    return axios.put(`${API_BASE}/api/teacher/progress/${progressId}/feedback`,
       formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
       }
-    )
+    })
+  },
+
+  // 消息相关接口
+  getReceivedMessages: async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.get(`${API_BASE}/api/messages/received`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  },
+
+  getSentMessages: async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.get(`${API_BASE}/api/messages/sent`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  },
+
+  sendMessage: async (data) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.post(`${API_BASE}/api/messages`, data, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  },
+
+  getUnreadMessageCount: async () => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.get(`${API_BASE}/api/messages/unread/count`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+  },
+
+  markMessageAsRead: async (id) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('未找到认证token')
+    }
+    return axios.post(`${API_BASE}/api/messages/${id}/read`, null, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
   }
 }

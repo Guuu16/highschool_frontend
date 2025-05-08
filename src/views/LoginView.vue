@@ -54,6 +54,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
+import { commonApi } from '@/api/common'
 
 const form = ref({
   username: '',

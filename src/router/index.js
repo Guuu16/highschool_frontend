@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
-import Layout from '@/views/Layout.vue'
+const Layout = () => import('@/views/Layout.vue')
 
 // 学生模块
 import StudentDashboard from '@/views/student/StudentDashboard.vue'
@@ -164,13 +164,17 @@ const routes = [
       },
       // 保留旧路由路径兼容性
       {
-        path: 'student/policies',
-        redirect: '/student/messages/policies'
+        path: 'events',
+        component: () => import('@/views/teacher/TeacherEvents.vue')
+      },
+      {
+        path: 'messages',
+        component: () => import('@/views/teacher/TeacherMessages.vue')
       },
       {
         path: 'student/messages',
         name: 'StudentMessages',
-        component: StudentMessages,
+        component: () => import('@/views/student/StudentMessages.vue'),
         meta: { role: 'student' }
       },
 
@@ -216,6 +220,12 @@ const routes = [
         name: 'TeacherEvents',
         component: TeacherEvents,
         meta: { role: 'teacher' }
+      },
+      {
+        path: '/teacher/messages',
+        name: 'TeacherMessages',
+        component: () => import('@/views/teacher/TeacherMessages.vue'),
+        meta: { role: 'teacher'  }
       },
 
       // 管理员路由

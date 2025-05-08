@@ -7,7 +7,7 @@
         <el-col :span="8">
           <el-card shadow="hover">
             <div class="stat-item">
-              <div class="stat-value">5</div>
+              <div class="stat-value">{{ stats.guidingProjects }}</div>
               <div class="stat-label">指导项目</div>
             </div>
           </el-card>
@@ -15,16 +15,16 @@
         <el-col :span="8">
           <el-card shadow="hover">
             <div class="stat-item">
-              <div class="stat-value">3</div>
+              <div class="stat-value">{{ stats.pendingReview }}</div>
               <div class="stat-label">待审核项目</div>
             </div>
           </el-card>
         </el-col>
         <el-col :span="8">
-          <el-card shadow="hover">
+          <el-card shadow="hover" @click="$router.push('/teacher/messages')">
             <div class="stat-item">
-              <div class="stat-value">2</div>
-              <div class="stat-label">导师申请</div>
+              <div class="stat-value">{{ stats.unreadMessages }}</div>
+              <div class="stat-label">未读消息</div>
             </div>
           </el-card>
         </el-col>
@@ -43,14 +43,6 @@
           </el-card>
         </el-col>
         <el-col :span="6">
-          <el-card shadow="hover" @click="$router.push('/teacher/mentor-review')">
-            <div class="action-item">
-              <el-icon :size="30"><User /></el-icon>
-              <div>导师申请</div>
-            </div>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
           <el-card shadow="hover" @click="$router.push('/teacher/events')">
             <div class="action-item">
               <el-icon :size="30"><Calendar /></el-icon>
@@ -59,10 +51,10 @@
           </el-card>
         </el-col>
         <el-col :span="6">
-          <el-card shadow="hover" @click="$router.push('/teacher/students')">
+          <el-card shadow="hover" @click="$router.push('/teacher/messages')">
             <div class="action-item">
-              <el-icon :size="30"><Avatar /></el-icon>
-              <div>学生管理</div>
+              <el-icon :size="30"><Message /></el-icon>
+              <div>消息中心</div>
             </div>
           </el-card>
         </el-col>
@@ -72,7 +64,41 @@
 </template>
 
 <script setup>
-import { Document, User, Calendar, Avatar } from '@element-plus/icons-vue'
+import { ref, onMounted } from 'vue'
+import { Document, User, Calendar, Avatar, Message } from '@element-plus/icons-vue'
+import { teacherApi } from '@/api/teacher'
+import { ElMessage } from 'element-plus'
+
+const stats = ref({
+  guidingProjects: 0,
+  pendingReview: 0,
+  unreadMessages: 0
+})
+
+const fetchStats = async () => {
+  try {
+    // 获取项目统计
+    const projectsRes = await teacherApi.getProjects()
+    if (projectsRes.data?.success) {
+      const projects = projectsRes.data.data || []
+      stats.value.guidingProjects = projects.length
+      stats.value.pendingReview = projects.filter(p => p.status === 0).length
+    }
+
+    // 获取未读消息数
+    const messagesRes = await teacherApi.getUnreadMessageCount()
+    if (messagesRes.data?.success) {
+      stats.value.unreadMessages = messagesRes.data.data?.count || 0
+    }
+  } catch (error) {
+    console.error('获取统计数据失败:', error)
+    ElMessage.error('获取统计数据失败')
+  }
+}
+
+onMounted(() => {
+  fetchStats()
+})
 </script>
 
 <style scoped>

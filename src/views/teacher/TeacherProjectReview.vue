@@ -216,7 +216,7 @@ const submitReview = async (status) => {
   try {
     const token = localStorage.getItem('token')
     const res = await axios.put(
-      `${import.meta.env.VITE_API_BASE || ''}/api/api/teacher/projects/${currentProject.value.id}/review`,
+      `${import.meta.env.VITE_API_BASE || ''}/api/api/projects/${currentProject.value.id}/review`,
       {
         status: status === 'approved' ? 1 : 2,  // 1=通过, 2=拒绝
         feedback: reviewForm.value.comment,

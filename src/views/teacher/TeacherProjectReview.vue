@@ -86,6 +86,14 @@
           <div class="project-description">
             {{ currentProject.description }}
           </div>
+          <div v-if="currentProject.planFileUrl" style="margin-top: 15px;">
+            <el-button 
+              type="primary"
+              @click="viewPlanFile(currentProject.planFileUrl)"
+            >
+              查看计划书
+            </el-button>
+          </div>
         </div>
         
         <template v-if="activeTab === 'pending'">
@@ -168,7 +176,8 @@ const fetchProjects = async () => {
         category: categoryMap.get(project.categoryId) || '未分类',
         description: project.description || '无描述',
         credit: project.credit || 0,
-        createdAt: project.createTime ? new Date(project.createTime).toLocaleString() : '未知时间'
+        createdAt: project.createTime ? new Date(project.createTime).toLocaleString() : '未知时间',
+        planFileUrl: project.planFileUrl
       }))
 
     // 筛选已审核项目(status=1或2)
@@ -210,6 +219,10 @@ const handleApprove = (id) => {
 
 const handleReject = (id) => {
   handleView(id)
+}
+
+const viewPlanFile = (fileUrl) => {
+  window.open(`${import.meta.env.VITE_API_BASE || ''}/api${fileUrl}`, '_blank')
 }
 
 const submitReview = async (status) => {
